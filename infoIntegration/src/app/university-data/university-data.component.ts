@@ -10,13 +10,10 @@ export class UniversityDataComponent implements OnInit {
 
   constructor(private homeService: HomeService) { }
 
-  uniArr = [];
-  unis = null;
+  unis = [];
   ngOnInit(): void {
-    this.homeService.getUniData().subscribe(response => {
-      console.log(response);
+    this.homeService.getPyMsg().subscribe(response => {
       this.unis = response;
-      this.uniArr = JSON.parse(this.unis);
     });
   }
 
