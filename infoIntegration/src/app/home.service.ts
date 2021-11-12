@@ -42,4 +42,10 @@ export class HomeService {
     return resp;
   }
 
+  public getWeatherData(): Observable<any> {
+
+    const resp = this.http.get(this.url + 'weather');
+    return resp;
+  }
+
 }

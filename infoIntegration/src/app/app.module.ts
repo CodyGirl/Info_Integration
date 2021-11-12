@@ -9,13 +9,15 @@ import { TabMenuModule } from 'primeng/tabmenu';
 import { StudentInfoComponent } from './student-info/student-info.component';
 import { TableModule } from 'primeng/table';
 import { UniversityDataComponent } from './university-data/university-data.component';
+import { WeatherComponent } from './weather/weather.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
     StudentInfoComponent,
-    UniversityDataComponent
+    UniversityDataComponent,
+    WeatherComponent
   ],
   imports: [
     BrowserModule,

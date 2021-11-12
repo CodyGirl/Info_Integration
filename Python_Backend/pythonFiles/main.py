@@ -22,7 +22,7 @@ def getUniData():
     try:
         conn = mysql.connector.connect(host='localhost',database=database,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM uni_data where ranking BETWEEN 1 AND 50')
+        cursor.execute('SELECT * FROM uni_data')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:
@@ -30,6 +30,25 @@ def getUniData():
     except Error as e:
         print("SQL Error: "+str(e))
         return None
+    conn.close()
+    return json.dumps(json_data)
+
+@app.route('/weather',methods=['GET'])
+def getWeatherData():
+    # extract_load_uni_Data()
+    json_data=[]
+    try:
+        conn = mysql.connector.connect(host='localhost',database=database,user=username,password=password)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM weather')
+        row_headers=[x[0] for x in cursor.description] #this will extract row headers
+        rv = cursor.fetchall()
+        for result in rv:
+            json_data.append(dict(zip(row_headers,result)))
+    except Error as e:
+        print("SQL Error: "+str(e))
+        return None
+    conn.close()
     return json.dumps(json_data)
 
 @app.route('/home/stuData',methods=['GET'])
