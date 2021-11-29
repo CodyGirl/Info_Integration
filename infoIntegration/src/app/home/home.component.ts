@@ -23,7 +23,7 @@ export class HomeComponent implements OnInit {
     })
 
     this.menu = [
-      { label: 'Student Data', icon: 'pi pi-fw pi-pencil', command: (event?: any) => this.data(event) },
+      // { label: 'Student Data', icon: 'pi pi-fw pi-pencil', command: (event?: any) => this.data(event) },
       { label: 'Weather Data', icon: 'pi pi-fw pi-cloud', command: (event?: any) => this.data(event) },
       { label: 'University Data', icon: 'pi pi-fw pi-home', command: (event?: any) => this.data(event) }
     ];
