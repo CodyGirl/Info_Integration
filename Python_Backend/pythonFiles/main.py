@@ -247,34 +247,41 @@ def loadTopologicalData():
         geocoder = OpenCageGeocode(key)
         conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM sample')
+        cursor.execute('SELECT * FROM sample limit 200')
         rv = cursor.fetchall()
-        for result in rv:
-            results = geocoder.geocode(result[1])
+        for sqlresult in rv:
+            results = geocoder.geocode(sqlresult[1])
+            queryinput = ()
             if results and len(results):
-                print(results)
+                aqi = 0
+                city = ""
+                state = ""
+                if 'city' in results[0]["components"]:
+                    city = results[0]["components"]['city']
+                if 'state' in results[0]["components"]:
+                    state = results[0]["components"]["state"]
+                queryinput = (sqlresult[0],aqi,results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],results[0]['annotations']["currency"]["iso_code"],
+                    results[0]['annotations']["geohash"],results[0]['annotations']["roadinfo"]["drive_on"],results[0]['annotations']["roadinfo"]["speed_in"],
+                    results[0]['annotations']["timezone"]["short_name"],results[0]['annotations']["what3words"]["words"],city,state
+                    ,results[0]["formatted"])
+                print(queryinput)
+                query = "insert into topological_info(uni_fk,aqi,latitude,longitude,currency,geohash,drive_in,speed_in,timezone,what3words,city,state,address) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                cursor.execute(query,tuple(queryinput))
+                conn.commit()
             else:
-                print("NO OUTPUT")
-            break
+                print("NO OUTPUT for University: "+sqlresult[1])
+                topo_dump = (sqlresult[0],sqlresult[1])
+                query = "insert into topological_dump(uni_fk,institution) values(%s,%s)"
+                cursor.execute(query,tuple(topo_dump))
+                conn.commit()
+            # break
     except Error as e:
         print("Error in loadTopologicalData: "+str(e))
-        return None
+        pass
     conn.close()
-
-# Lat
-# log
-# curerncy
-# geohash
-# drive_in
-# speed_in
-# timezone
-# what3words
-# city
-# state
-# address
 
 if __name__ == '__main__':
     # weather_info()
-    extract_load_uni_Data("2020-QS-World-University-Rankings.csv")
-    # loadTopologicalData()
+    # extract_load_uni_Data("2020-QS-World-University-Rankings.csv")
+    loadTopologicalData()
     app.run(debug=True)
