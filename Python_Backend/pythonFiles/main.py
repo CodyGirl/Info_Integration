@@ -247,7 +247,7 @@ def loadTopologicalData():
         geocoder = OpenCageGeocode(key)
         conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM sample limit 200')
+        cursor.execute('SELECT * FROM sample limit 1569,31')   #check from 1568
         rv = cursor.fetchall()
         for sqlresult in rv:
             results = geocoder.geocode(sqlresult[1])
@@ -256,11 +256,14 @@ def loadTopologicalData():
                 aqi = 0
                 city = ""
                 state = ""
+                currency = ""
                 if 'city' in results[0]["components"]:
                     city = results[0]["components"]['city']
                 if 'state' in results[0]["components"]:
                     state = results[0]["components"]["state"]
-                queryinput = (sqlresult[0],aqi,results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],results[0]['annotations']["currency"]["iso_code"],
+                if 'currency' in results[0]["annotations"]:
+                    currency = results[0]["annotations"]["currency"]["iso_code"]
+                queryinput = (sqlresult[0],aqi,results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],currency,
                     results[0]['annotations']["geohash"],results[0]['annotations']["roadinfo"]["drive_on"],results[0]['annotations']["roadinfo"]["speed_in"],
                     results[0]['annotations']["timezone"]["short_name"],results[0]['annotations']["what3words"]["words"],city,state
                     ,results[0]["formatted"])
