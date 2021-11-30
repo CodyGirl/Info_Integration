@@ -247,7 +247,7 @@ def loadTopologicalData():
         geocoder = OpenCageGeocode(key)
         conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM sample limit 1569,31')   #check from 1568
+        cursor.execute('SELECT * FROM sample limit 4067,200')   #check from 4067
         rv = cursor.fetchall()
         for sqlresult in rv:
             results = geocoder.geocode(sqlresult[1])
