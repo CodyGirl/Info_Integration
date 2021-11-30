@@ -12,10 +12,13 @@ from opencage.geocoder import OpenCageGeocode
 
 app = Flask(__name__)
 databaseTask1 = 'info_integration_task1' 
+databaseTask2 = 'info_integration_task2' 
 username = 'root' 
 password = 'mysql'
 api_key = 'c1ae9097e6f089ad74f17f63fbd18b9d'
 base_url = "http://api.openweathermap.org/data/2.5/weather?q="
+p1 = "6e2d41e5e07144ca8cc6cd76e8891c8a"
+p2 = "7198b251faa44fc780badb7b62d62162"
 
 CORS(app)
 @app.route('/home',methods=['GET'])
@@ -60,7 +63,7 @@ def getStuData():
 
 def extract_load_uni_Data(filename):
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         
         if conn.is_connected():
             cursor = conn.cursor()
@@ -93,6 +96,8 @@ def extract_load_uni_Data(filename):
                     row = [str(sub).replace('+', '') for sub in row]
                     # row = [str(sub).replace(' ', '') for sub in row]
                     row = [str(sub).replace('=', '') for sub in row]
+                    if row[0]=='nan' : row[0] = "0"
+                    if row[1]=='nan' : row[1] = "0"
                     if row[9]=='nan' or row[9]=='-': row[9] = "0"
                     if row[10]=='nan' or row[10]=='-': row[10] = "0"
                     if row[11]=='nan' or row[11]=='-': row[11] = "0"
@@ -241,50 +246,51 @@ def insert_weather_data(weather):
         return None
     return 1
 
-def loadTopologicalData():
-    key = 'e620de135ddb428da4af8af1eb9a5569'
+def loadLocationData():
+    key = p1
     try:
         geocoder = OpenCageGeocode(key)
-        conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM sample limit 4067,200')   #check from 4067
+        cursor.execute('SELECT uni_key,institution,country FROM uni_combined_data limit 2500,2000')   #check from 
         rv = cursor.fetchall()
         for sqlresult in rv:
             results = geocoder.geocode(sqlresult[1])
             queryinput = ()
             if results and len(results):
-                aqi = 0
+                # aqi = 0
                 city = ""
                 state = ""
-                currency = ""
+                country = ""
+                # currency = ""
                 if 'city' in results[0]["components"]:
                     city = results[0]["components"]['city']
                 if 'state' in results[0]["components"]:
                     state = results[0]["components"]["state"]
-                if 'currency' in results[0]["annotations"]:
-                    currency = results[0]["annotations"]["currency"]["iso_code"]
-                queryinput = (sqlresult[0],aqi,results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],currency,
-                    results[0]['annotations']["geohash"],results[0]['annotations']["roadinfo"]["drive_on"],results[0]['annotations']["roadinfo"]["speed_in"],
-                    results[0]['annotations']["timezone"]["short_name"],results[0]['annotations']["what3words"]["words"],city,state
-                    ,results[0]["formatted"])
+                if 'country' in results[0]["components"]:
+                    country = results[0]["components"]["country"]
+                # if 'currency' in results[0]["annotations"]:
+                #     currency = results[0]["annotations"]["currency"]["iso_code"]
+                queryinput = (sqlresult[0],results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],city,state,country,
+                results[0]["formatted"],results[0]['annotations']["geohash"],results[0]['annotations']["what3words"]["words"])
                 print(queryinput)
-                query = "insert into topological_info(uni_fk,aqi,latitude,longitude,currency,geohash,drive_in,speed_in,timezone,what3words,city,state,address) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                query = "insert into location(uni_key,latitude,longitude,city,state,country,address,geohash,what3words) values(%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                 cursor.execute(query,tuple(queryinput))
                 conn.commit()
             else:
                 print("NO OUTPUT for University: "+sqlresult[1])
-                topo_dump = (sqlresult[0],sqlresult[1])
-                query = "insert into topological_dump(uni_fk,institution) values(%s,%s)"
-                cursor.execute(query,tuple(topo_dump))
+                loc_dump = (sqlresult[0],sqlresult[1],sqlresult[2])
+                query = "insert into location_dump_table(uni_key,institution,country) values(%s,%s,%s)"
+                cursor.execute(query,tuple(loc_dump))
                 conn.commit()
             # break
     except Error as e:
-        print("Error in loadTopologicalData: "+str(e))
+        print("Error in loadLocationData: "+str(e))
         pass
     conn.close()
 
 if __name__ == '__main__':
     # weather_info()
     # extract_load_uni_Data("2020-QS-World-University-Rankings.csv")
-    loadTopologicalData()
+    loadLocationData()
     app.run(debug=True)
