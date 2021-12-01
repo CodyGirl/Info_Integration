@@ -252,7 +252,7 @@ def loadLocationData():
         geocoder = OpenCageGeocode(key)
         conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT uni_key,institution,country FROM uni_combined_data limit 2500,2000')   #check from 
+        cursor.execute('SELECT uni_key,institution,country FROM uni_combined_data limit 4500,200')   #check from 
         rv = cursor.fetchall()
         for sqlresult in rv:
             results = geocoder.geocode(sqlresult[1])
