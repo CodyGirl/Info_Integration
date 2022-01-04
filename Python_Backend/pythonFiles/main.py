@@ -15,8 +15,8 @@ databaseTask1 = 'info_integration_task1'
 databaseTask2 = 'info_integration_task2' 
 username = 'root' 
 password = 'mysql'
-api_key = 'c1ae9097e6f089ad74f17f63fbd18b9d'
-base_url = "http://api.openweathermap.org/data/2.5/weather?q="
+weather_api_key = 'c1ae9097e6f089ad74f17f63fbd18b9d'
+base_url = "http://api.openweathermap.org/data/2.5/weather?"
 p1 = "6e2d41e5e07144ca8cc6cd76e8891c8a"
 p2 = "7198b251faa44fc780badb7b62d62162"
 
@@ -56,10 +56,6 @@ def getWeatherData():
         return None
     conn.close()
     return json.dumps(json_data)
-
-@app.route('/home/stuData',methods=['GET'])
-def getStuData():
-    return "Data!"
 
 def extract_load_uni_Data(filename):
     try:
@@ -111,42 +107,6 @@ def extract_load_uni_Data(filename):
                     if row[19]=='nan' or row[19]=='-': row[19] = "0"
                     if row[20]=='nan' or row[20]=='-': row[20] = "0"
                     if row[21]=='nan' or row[21]=='-': row[21] = "0"
-                    # if('-' in row[9] and len(row[9]) > 2):
-                    #     temp_row = row[9].split('-')
-                    #     row[9] = (float(temp_row[0]) + float(temp_row[1])) / 2
-                    # if('-' in row[10] and len(row[10]) > 2):
-                    #     temp_row = row[10].split('-')
-                    #     row[10] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[11] and len(row[11]) > 2):
-                    #     temp_row = row[11].split('-')
-                    #     row[11] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[12] and len(row[12]) > 2):
-                    #     temp_row = row[12].split('-')
-                    #     row[12] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[13] and len(row[13]) > 2):
-                    #     temp_row = row[13].split('-')
-                    #     row[13] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[14] and len(row[14]) > 2):
-                    #     temp_row = row[14].split('-')
-                    #     row[14] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[15] and len(row[15]) > 2):
-                    #     temp_row = row[15].split('-')
-                    #     row[15] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[16] and len(row[16]) > 2):
-                    #     temp_row = row[16].split('-')
-                    #     row[16] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[17] and len(row[17]) > 2):
-                    #     temp_row = row[17].split('-')
-                    #     row[17] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[18] and len(row[18]) > 2):
-                    #     temp_row = row[18].split('-')
-                    #     row[18] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[19] and len(row[19]) > 2):
-                    #     temp_row = row[19].split('-')
-                    #     row[19] = (int(temp_row[0]) + int(temp_row[1])) / 2
-                    # if('-' in row[20] and len(row[20]) > 2):
-                    #     temp_row = row[20].split('-')
-                    #     row[20] = (int(temp_row[0]) + int(temp_row[1])) / 2
                     if('-' in row[21] and len(row[21]) > 2):
                         temp_row = row[21].split('-')
                         row[21] = (float(temp_row[0]) + float(temp_row[1])) / 2
@@ -180,12 +140,12 @@ def extract_load_uni_Data(filename):
     except Error as e:
         print(str(e))
 
-def getCityData():
+def getLocationData():
     json_data=[]
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT distinct(city) FROM uni_data where ranking BETWEEN 951 AND 1000')
+        cursor.execute('select uni_key,latitude,longitude,city,state,country from location group by city,state,country having count(*)=1 order by state;')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:
@@ -196,48 +156,52 @@ def getCityData():
     return json.dumps(json_data)
 
 def weather_info():
-    city_data = json.loads(getCityData())
-    cities = []
-    for i in city_data:
-        cities.append(i["city"])
-    print("Number of cities in the data source: " + str(len(cities)))
+    city_data = json.loads(getLocationData())
+    print("Number of locations in the data source: " + str(len(city_data)))
 
-    if (len(cities) > 0):
-        for i in cities:
-            complete_url = base_url+i+"&appid="+api_key
-            print(complete_url)
+    if (len(city_data) > 0):
+        batchsize = 50
+        for j in range(0,len(city_data),batchsize):
+            batch = city_data[j:j+batchsize]
+            for i in batch:
+                complete_url = base_url+"lat="+str(i['latitude'])+"&lon="+str(i['longitude'])+"&units=metric&appid="+weather_api_key
+                print(complete_url)
+                # api response
+                response = requests.get(complete_url)
+                json_response = response.json()
 
-            # api response
-            response = requests.get(complete_url)
-            json_response = response.json()
+                if(json_response["cod"]!=404):
+                    weather = parse_city_weather(json_response,i['city'],i['state'],i['country'])
+                    db_output = insert_weather_data(weather)
+            
+            time.sleep(60)
 
-            if(json_response["cod"]!=404):
-                weather = parse_city_weather(json_response)
-                db_op = insert_weather_data(weather)
-
-def parse_city_weather(weather_json):
+def parse_city_weather(weather_json,city,state,country):
     weather = []
     try:
-        weather.append(weather_json["sys"]["country"])
-        weather.append(weather_json["name"])
-        weather.append(weather_json["coord"]["lat"])
-        weather.append(weather_json["coord"]["lon"])
-        weather.append(datetime.fromtimestamp(weather_json["dt"]).strftime('%d-%m-%y'))
+        weather.append(city)
+        weather.append(state)
+        weather.append(country)
+        weather.append(weather_json["main"]["temp"])
         weather.append(weather_json["main"]["temp_max"])
         weather.append(weather_json["main"]["temp_min"])
-        weather.append(weather_json["main"]["temp"])
+        weather.append(weather_json["main"]["feels_like"])
         weather.append(weather_json["main"]["pressure"])
         weather.append(weather_json["main"]["humidity"])
         weather.append(weather_json["wind"]["speed"])
+        dt_object = datetime.fromtimestamp(weather_json["sys"]["sunrise"])
+        weather.append(dt_object)
+        dt_object = datetime.fromtimestamp(weather_json["sys"]["sunset"])
+        weather.append(dt_object)
     except:
         print("Exception while parsing weather object")
     return weather
 
 def insert_weather_data(weather):
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        query = "insert into weather(country_code,city,latitude,longitude,date,max_temp,min_temp,curr_temp,pressure,humidity,wind) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        query = "insert into weather_info(city,state,country,current_temp,max_temp,min_temp,feels_like_temp,pressure,humidity,wind,sunrise,sunset) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         cursor.execute(query,tuple(weather))
         conn.commit()
         conn.close()
@@ -258,19 +222,15 @@ def loadLocationData():
             results = geocoder.geocode(sqlresult[1])
             queryinput = ()
             if results and len(results):
-                # aqi = 0
                 city = ""
                 state = ""
                 country = ""
-                # currency = ""
                 if 'city' in results[0]["components"]:
                     city = results[0]["components"]['city']
                 if 'state' in results[0]["components"]:
                     state = results[0]["components"]["state"]
                 if 'country' in results[0]["components"]:
                     country = results[0]["components"]["country"]
-                # if 'currency' in results[0]["annotations"]:
-                #     currency = results[0]["annotations"]["currency"]["iso_code"]
                 queryinput = (sqlresult[0],results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],city,state,country,
                 results[0]["formatted"],results[0]['annotations']["geohash"],results[0]['annotations']["what3words"]["words"])
                 print(queryinput)
@@ -289,8 +249,79 @@ def loadLocationData():
         pass
     conn.close()
 
+def topological_info():
+    city_data = json.loads(getLocationData())
+    air_pol_base_url = "http://api.openweathermap.org/data/2.5/air_pollution?lat="
+    print("Number of locations in the data source: " + str(len(city_data)))
+
+    if (len(city_data) > 0):
+        batchsize = 50
+        for j in range(0,len(city_data),batchsize):
+            batch = city_data[j:j+batchsize]
+            for i in batch:
+                complete_url = air_pol_base_url+str(i['latitude'])+"&lon="+str(i['longitude'])+"&appid="+weather_api_key
+                print(complete_url)
+                # api response
+                response = requests.get(complete_url)
+                json_response = response.json()
+                topology = parse_topological_data(json_response,i['city'],i['state'],i['country'],i['uni_key'])
+                db_output = insert_topological_data(topology)
+            
+            time.sleep(60)
+
+def parse_topological_data(json_response,city,state,country,uni_key):
+    topology = [] #city,state,country,aqi,co,nh3,so2,no2,currency,drive_on,speed_in,timezone
+    key = p1
+    try:
+        geocoder = OpenCageGeocode(key)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        cursor = conn.cursor()
+        cursor.execute('SELECT institution from uni_combined_data where uni_key='+str(uni_key))
+        rv = cursor.fetchall()
+        conn.close()
+        currency = ""
+        drive_on = ""
+        speed_in = ""
+        results = geocoder.geocode(rv[0][0])
+        if results and len(results):
+            if 'currency' in results[0]["annotations"]:
+                currency = results[0]["annotations"]["currency"]["iso_code"]
+            if 'roadinfo' in results[0]["annotations"]:
+                drive_on = results[0]["annotations"]["roadinfo"]["drive_on"]
+                speed_in = results[0]["annotations"]["roadinfo"]["speed_in"]
+            timezone_short = results[0]["annotations"]["timezone"]["short_name"]
+        topology.append(city)
+        topology.append(state)
+        topology.append(country)
+        topology.append(json_response["list"][0]["main"]["aqi"])
+        topology.append(json_response["list"][0]["components"]["co"])
+        topology.append(json_response["list"][0]["components"]["nh3"])
+        topology.append(json_response["list"][0]["components"]["so2"])
+        topology.append(json_response["list"][0]["components"]["no2"])       
+        topology.append(currency)
+        topology.append(drive_on)
+        topology.append(speed_in)
+        topology.append(timezone_short)
+    except Error as e:
+        print("Exception while parsing topology object"+ str(e))
+    return topology
+
+def insert_topological_data(topology):
+    try:
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        cursor = conn.cursor()
+        query = "insert into topological_info(city,state,country,aqi,co,nh3,so2,no2,currency,drive_on,speed_in,timezone) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        cursor.execute(query,tuple(topology))
+        conn.commit()
+        conn.close()
+    except Error as e:
+        print("Record Insertion failed with error: "+ str(e))
+        return None
+    return 1
+
 if __name__ == '__main__':
     # weather_info()
+    topological_info()
     # extract_load_uni_Data("2020-QS-World-University-Rankings.csv")
-    loadLocationData()
+    # loadLocationData()
     app.run(debug=True)
