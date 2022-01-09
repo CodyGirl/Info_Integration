@@ -211,12 +211,12 @@ def insert_weather_data(weather):
     return 1
 
 def loadLocationData():
-    key = p1
+    key = p2
     try:
         geocoder = OpenCageGeocode(key)
         conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT uni_key,institution,country FROM uni_combined_data limit 4500,200')   #check from 
+        cursor.execute('SELECT uni_key,institution,country FROM uni_data limit 2400, 4800')   #check from 
         rv = cursor.fetchall()
         for sqlresult in rv:
             results = geocoder.geocode(sqlresult[1])
@@ -234,13 +234,13 @@ def loadLocationData():
                 queryinput = (sqlresult[0],results[0]["geometry"]["lat"],results[0]["geometry"]["lng"],city,state,country,
                 results[0]["formatted"],results[0]['annotations']["geohash"],results[0]['annotations']["what3words"]["words"])
                 print(queryinput)
-                query = "insert into location(uni_key,latitude,longitude,city,state,country,address,geohash,what3words) values(%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                query = "insert into location_task3(uni_key,latitude,longitude,city,state,country,address,geohash,what3words) values(%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                 cursor.execute(query,tuple(queryinput))
                 conn.commit()
             else:
                 print("NO OUTPUT for University: "+sqlresult[1])
                 loc_dump = (sqlresult[0],sqlresult[1],sqlresult[2])
-                query = "insert into location_dump_table(uni_key,institution,country) values(%s,%s,%s)"
+                query = "insert into location_dump_task3(uni_key,institution,country) values(%s,%s,%s)"
                 cursor.execute(query,tuple(loc_dump))
                 conn.commit()
             # break
@@ -321,7 +321,7 @@ def insert_topological_data(topology):
 
 if __name__ == '__main__':
     # weather_info()
-    topological_info()
+    # topological_info()
     # extract_load_uni_Data("2020-QS-World-University-Rankings.csv")
     # loadLocationData()
     app.run(debug=True)

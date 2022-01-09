@@ -2,34 +2,90 @@ import Levenshtein as lev
 import csv
 import pandas as pd
 import math
+import mysql.connector
+from mysql.connector import Error
+import ngram
+import nltk
+from nltk.corpus import stopwords
+nltk.download('stopwords')
 
 databaseTask2 = 'info_integration_task2' 
 username = 'root' 
 password = 'mysql'
 
-datasource1 = list(pd.read_csv("universities_ranking.csv",nrows=1).columns)
-print(datasource1)
+# datasource1 = list(pd.read_csv("universities_ranking.csv",nrows=1).columns)
+# print(datasource1)
 
-datasource2 = list(pd.read_csv("2020-QS-World-University-Rankings.csv",nrows=1).columns)
-print(datasource2)
+# datasource2 = list(pd.read_csv("2020-QS-World-University-Rankings.csv",nrows=1).columns)
+# print(datasource2)
 
-datasource3 = list(pd.read_excel("World University Rankings 2019-20.xlsx",nrows=1).columns)
-print(datasource3)
+# datasource3 = list(pd.read_excel("World University Rankings 2019-20.xlsx",nrows=1).columns)
+# print(datasource3)
 
-final_mapping = []
-for i in datasource3:
-    max_score_Ratio = []
-    for j in datasource1:
-        ratio = lev.ratio(i.lower(),j.lower())
-        temp = {'i' : i,'j': j, 'ratio': ratio}
-        max_score_Ratio.append(temp)
-    max = max_score_Ratio[0]
-    for val in max_score_Ratio:
-        if(val['ratio'] > max['ratio']):
-            max = val
-    final_mapping.append(max)
+def match_schema():
+    final_mapping = []
+    for i in datasource3:
+        max_score_Ratio = []
+        for j in datasource1:
+            ratio = lev.ratio(i.lower(),j.lower())
+            temp = {'i' : i,'j': j, 'ratio': ratio}
+            max_score_Ratio.append(temp)
+        max = max_score_Ratio[0]
+        for val in max_score_Ratio:
+            if(val['ratio'] > max['ratio']):
+                max = val
+        final_mapping.append(max)
 
-print(final_mapping)
+    print(final_mapping)
+
+def duplicate_uni():
+    try:
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        cursor = conn.cursor()
+        cursor.execute('select group_concat(l.uni_key),group_concat(u.institution),count(*) c from location_task3 l,uni_data u where l.uni_key = u.uni_key group by l.geohash having c > 1 limit 1')
+        rv = cursor.fetchall()
+        for sqlresult in rv:
+            uni_names = sqlresult[1].split(',')
+            uni_keys = sqlresult[0].split(',')
+            checkJaccardSim(uni_names,uni_keys)
+            # if(checkJaccardSim(uni_names)):
+            #     print('---')
+                # query = "insert into duplicate_uni(uni_key,institution) values(%s,%s)"
+                # cursor.execute(query,tuple(uni_names))
+                # conn.commit()
+    except Error as e:
+        print("SQL Error: "+str(e))
+        return None
+    conn.close()
+
+def checkJaccardSim(uni_names,uni_keys):
+    index_i = 0
+    index_j = 1
+    unique_keys = set()
+    while index_i < len(uni_names) - 1:
+        while index_j < len(uni_names):
+            arr1 = [word for word in uni_names[index_i].split(" ") if word not in set(stopwords.words('english'))]
+            arr2 = [word for word in uni_names[index_j].split(" ") if word not in set(stopwords.words('english'))]
+            str1 = " ".join(arr1)
+            str2 = " ".join(arr2)
+            str3 = "".join(arr1)
+            str4 = "".join(arr2)
+            
+            print(str1 + "AND" + str2)
+            distance = lev.ratio(str1.lower(),str2.lower())
+            ngramDis = ngram.NGram.compare(str1,str2,N=3)
+            print("NGRAM:" + str(ngramDis))
+            print(distance)
+            if(distance > 0.85 and ngramDis > 0.75):
+                unique_keys.add(uni_keys[index_j])
+            index_j = index_j + 1
+        index_i = index_i + 1
+    print(unique_keys)
+
+if __name__ == '__main__':
+    duplicate_uni()
+
+
 
 
 
