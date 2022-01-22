@@ -13,7 +13,7 @@ export class StudentInfoComponent implements OnInit {
   students = [];
   ngOnInit(): void {
 
-    this.homeService.getPyMsg().subscribe(response => {
+    this.homeService.getUniversityData().subscribe(response => {
       console.log(response);
       this.students = response;
     });

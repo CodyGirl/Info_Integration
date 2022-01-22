@@ -1,6 +1,6 @@
 from random import lognormvariate
 from types import LambdaType
-from flask import Flask,json
+from flask import Flask,json,request
 from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error
@@ -26,7 +26,7 @@ def getUniData():
     # extract_load_uni_Data()
     json_data=[]
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM uni_data')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
@@ -39,14 +39,15 @@ def getUniData():
     conn.close()
     return json.dumps(json_data)
 
-@app.route('/weather',methods=['GET'])
+@app.route('/region',methods=['GET'])
 def getWeatherData():
     # extract_load_uni_Data()
+    selectedRegion = request.args.get('selectedRegion')
     json_data=[]
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask1,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM weather')
+        cursor.execute('SELECT distinct('+selectedRegion+') FROM weather_info')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:

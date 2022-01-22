@@ -18,13 +18,13 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
 
-    this.homeService.getPyMsg().subscribe(resp => {
-      this.pyMsg = resp;
-    })
+    // this.homeService.getPyMsg().subscribe(resp => {
+    //   this.pyMsg = resp;
+    // })
 
     this.menu = [
       // { label: 'Student Data', icon: 'pi pi-fw pi-pencil', command: (event?: any) => this.data(event) },
-      { label: 'Weather Data', icon: 'pi pi-fw pi-cloud', command: (event?: any) => this.data(event) },
+      { label: 'Query Tab', icon: 'pi pi-fw pi-cloud', command: (event?: any) => this.data(event) },
       { label: 'University Data', icon: 'pi pi-fw pi-home', command: (event?: any) => this.data(event) }
     ];
 
@@ -38,7 +38,7 @@ export class HomeComponent implements OnInit {
   data(event) {
     if (event.item.label === 'Student Data')
       this.tabCount = 1;
-    else if (event.item.label === 'Weather Data')
+    else if (event.item.label === 'Query Tab')
       this.tabCount = 2;
     else
       this.tabCount = 3;

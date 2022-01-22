@@ -1,5 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { FormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
@@ -9,7 +11,9 @@ import { TabMenuModule } from 'primeng/tabmenu';
 import { StudentInfoComponent } from './student-info/student-info.component';
 import { TableModule } from 'primeng/table';
 import { UniversityDataComponent } from './university-data/university-data.component';
-import { WeatherComponent } from './weather/weather.component';
+import { QueryComponent } from './query/query.component';
+import { DropdownModule } from 'primeng/dropdown';
+import {ButtonModule} from 'primeng/button';
 
 @NgModule({
   declarations: [
@@ -17,13 +21,17 @@ import { WeatherComponent } from './weather/weather.component';
     HomeComponent,
     StudentInfoComponent,
     UniversityDataComponent,
-    WeatherComponent
+    QueryComponent
   ],
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
     HttpClientModule,
     TabMenuModule,
-    TableModule
+    TableModule,
+    DropdownModule,
+    FormsModule,
+    ButtonModule,
   ],
   providers: [HomeService],
   bootstrap: [AppComponent]

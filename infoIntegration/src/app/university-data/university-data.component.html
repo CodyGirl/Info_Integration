@@ -9,28 +9,28 @@
                 </th>
                 <th pSortableColumn="country">Country<p-sortIcon field="name"></p-sortIcon>
                 </th>
-                <th pSortableColumn="city">City<p-sortIcon field="category"></p-sortIcon>
-                </th>
-                <th pSortableColumn="students">Number of Students<p-sortIcon field="quantity"></p-sortIcon>
+                <!-- <th pSortableColumn="students">Number of Students<p-sortIcon field="quantity"></p-sortIcon>
                 </th>
                 <th pSortableColumn="stu_staff_rt">Student Staff Ratio<p-sortIcon field="quantity"></p-sortIcon>
                 </th>
-                <th pSortableColumn="intl_stu">International Students<p-sortIcon field="quantity"></p-sortIcon>
+                <th pSortableColumn="intl_stu">International Students (%)<p-sortIcon field="quantity"></p-sortIcon>
                 </th>
                 <th pSortableColumn="gen_rt">Gender Ratio<p-sortIcon field="quantity"></p-sortIcon>
+                </th> -->
+                <th pSortableColumn="gen_rt">Overall Score<p-sortIcon field="quantity"></p-sortIcon>
                 </th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-uni>
             <tr>
                 <td>{{uni.ranking}}</td>
-                <td>{{uni.title}}</td>
+                <td>{{uni.institution}}</td>
                 <td>{{uni.country}}</td>
-                <td>{{uni.city}}</td>
-                <td>{{uni.students}}</td>
+                <!-- <td>{{uni.num_stu}}</td>
                 <td>{{uni.stu_staff_rt}}</td>
-                <td>{{uni.intl_stu}}</td>
-                <td>{{uni.gen_rt}}</td>
+                <td>{{uni.intl_stu_per}}</td>
+                <td>{{uni.gender_rt}}</td> -->
+                <td>{{uni.overall_score}}</td>
             </tr>
         </ng-template>
     </p-table>

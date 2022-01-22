@@ -42,12 +42,19 @@ def duplicate_uni():
     try:
         conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('select group_concat(l.uni_key),group_concat(u.institution),count(*) c from location_task3 l,uni_data u where l.uni_key = u.uni_key group by l.geohash having c > 1 limit 1')
+        cursor.execute("select group_concat(l.uni_key SEPARATOR'::'),group_concat(u.institution SEPARATOR'::'),count(*) c from location_task3 l,uni_data u where l.uni_key = u.uni_key group by l.geohash having c > 1 limit 20")
         rv = cursor.fetchall()
         for sqlresult in rv:
-            uni_names = sqlresult[1].split(',')
-            uni_keys = sqlresult[0].split(',')
-            checkJaccardSim(uni_names,uni_keys)
+            uni_names = sqlresult[1].split('::')
+            uni_keys = sqlresult[0].split('::')
+            print(uni_names)
+            unique_keys = checkSimilarity(uni_names,uni_keys)
+            # if(unique_keys):
+            #     cursor.execute("select uni_key,institution from uni_data where uni_key in ('+"+str(unique_keys.pop())+"','"+str(unique_keys.pop())+"')")
+            #     duplicate_insert = cursor.fetchall()
+                # for di in duplicate_insert :
+                # cursor.execute("insert into duplicate_uni values("+str(duplicate_insert[0][0])+",\""+str(duplicate_insert[0][1])+"\","+str(duplicate_insert[1][0])+",\""+str(duplicate_insert[1][1])+"\")")
+                # conn.commit()
             # if(checkJaccardSim(uni_names)):
             #     print('---')
                 # query = "insert into duplicate_uni(uni_key,institution) values(%s,%s)"
@@ -58,7 +65,7 @@ def duplicate_uni():
         return None
     conn.close()
 
-def checkJaccardSim(uni_names,uni_keys):
+def checkSimilarity(uni_names,uni_keys):
     index_i = 0
     index_j = 1
     unique_keys = set()
@@ -72,15 +79,43 @@ def checkJaccardSim(uni_names,uni_keys):
             str4 = "".join(arr2)
             
             print(str1 + "AND" + str2)
+            # levenshtein ration
             distance = lev.ratio(str1.lower(),str2.lower())
+
+            # ngram distance
             ngramDis = ngram.NGram.compare(str1,str2,N=3)
             print("NGRAM:" + str(ngramDis))
             print(distance)
+
+            # jaccard similarity measure
+            intersection = len(set(str1).intersection(str2))
+            union = len(set(str1)) + len(set(str2)) - intersection
+
+            jaccardIndex = float(intersection) / union
+
             if(distance > 0.85 and ngramDis > 0.75):
+                print("**************** ITS A MATCH ***************")
                 unique_keys.add(uni_keys[index_j])
+                unique_keys.add(uni_keys[index_i])
+                uni_keys.pop(index_j)
+                uni_names.pop(index_j)
+                remove_duplicates(unique_keys)
+                # return unique_keys
             index_j = index_j + 1
         index_i = index_i + 1
-    print(unique_keys)
+
+def remove_duplicates(keys):
+    try:
+        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        cursor = conn.cursor()
+        cursor.execute("select uni_key,institution from uni_data where uni_key in ('+"+str(keys.pop())+"','"+str(keys.pop())+"')")
+        duplicate_insert = cursor.fetchall()
+        cursor.execute("insert into duplicate_uni values("+str(duplicate_insert[0][0])+",\""+str(duplicate_insert[0][1])+"\","+str(duplicate_insert[1][0])+",\""+str(duplicate_insert[1][1])+"\")")
+        conn.commit()
+    except Error as e:
+        print("SQL Error: "+str(e))
+        return None
+    conn.close()
 
 if __name__ == '__main__':
     duplicate_uni()

@@ -12,7 +12,8 @@ export class UniversityDataComponent implements OnInit {
 
   unis = [];
   ngOnInit(): void {
-    this.homeService.getPyMsg().subscribe(response => {
+    this.homeService.getUniversityData().subscribe(response => {
+      console.log(response)
       this.unis = response;
     });
   }

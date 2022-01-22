@@ -35,16 +35,15 @@ export class HomeService {
     return resp;
   }
 
-  public getPyMsg(): Observable<any> {
+  public getUniversityData(): Observable<any> {
 
     const resp = this.http.get(this.url + 'home');
-    console.log(resp);
     return resp;
   }
 
-  public getWeatherData(): Observable<any> {
+  public getRegionData(selectedRegion): Observable<any> {
 
-    const resp = this.http.get(this.url + 'weather');
+    const resp = this.http.get(this.url + 'region?selectedRegion='+selectedRegion);
     return resp;
   }
 
