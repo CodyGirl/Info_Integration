@@ -12,7 +12,8 @@ from opencage.geocoder import OpenCageGeocode
 
 app = Flask(__name__)
 databaseTask1 = 'info_integration_task1' 
-databaseTask2 = 'info_integration_task2' 
+databaseTask2 = 'info_integration_task2'
+databaseTask4 = 'II_T4' 
 username = 'root' 
 password = 'mysql'
 weather_api_key = 'c1ae9097e6f089ad74f17f63fbd18b9d'
@@ -26,9 +27,88 @@ def getUniData():
     # extract_load_uni_Data()
     json_data=[]
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM uni_data')
+        cursor.execute('SELECT * FROM uni_data where ranking <> 0')
+        row_headers=[x[0] for x in cursor.description] #this will extract row headers
+        rv = cursor.fetchall()
+        for result in rv:
+            json_data.append(dict(zip(row_headers,result)))
+    except Error as e:
+        print("SQL Error: "+str(e))
+        return None
+    conn.close()
+    return json.dumps(json_data)
+
+@app.route('/getPollutionData',methods=['GET'])
+def getUniDataPollution():
+    selectedRegion = request.args.get('selectedRegion')
+    selectedValueofRegion = request.args.get('selectedVal').lower()
+    json_data=[]
+    try:
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
+        cursor = conn.cursor()
+        if(selectedValueofRegion != 'undefined'):
+            query = "select u.ranking,u.institution,l.city,l.state,l.country,t.aqi,t.co,t.no2,t.nh3,t.so2,t.timezone,t.currency, \
+               t.drive_on,t.speed_in from uni_data u,location l,topology t where lower(l."+selectedRegion+")=\""+selectedValueofRegion+"\" AND u.uni_key=l.uni_key and \
+            l.city=t.city and l.state=t.state and l.country=t.country and ranking>0 and t.aqi<=3 order by u.ranking"
+        else:
+            query = "select u.ranking,u.institution,l.city,l.state,l.country,t.aqi,t.co,t.no2,t.nh3,t.so2,t.timezone,t.currency, \
+               t.drive_on,t.speed_in from uni_data u,location l,topology t where u.uni_key=l.uni_key and \
+            l.city=t.city and l.state=t.state and l.country=t.country and ranking>0 and t.aqi<=3 order by u.ranking"
+        cursor.execute(query)
+        row_headers=[x[0] for x in cursor.description] #this will extract row headers
+        rv = cursor.fetchall()
+        for result in rv:
+            json_data.append(dict(zip(row_headers,result)))
+    except Error as e:
+        print("SQL Error: "+str(e))
+        return None
+    conn.close()
+    return json.dumps(json_data)
+
+@app.route('/getWeatherData',methods=['GET'])
+def getUniDataWeather():
+    selectedRegion = request.args.get('selectedRegion')
+    selectedValueofRegion = request.args.get('selectedVal').lower()
+    min_temp = request.args.get('min_temp')
+    max_temp = request.args.get('max_temp')
+    json_data=[]
+    try:
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
+        cursor = conn.cursor()
+        if(selectedValueofRegion != 'undefined'):
+            if(min_temp == 'null' and max_temp == 'null'):
+                query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity \
+                from location l,uni_data u, weather w where lower(l."+selectedRegion+")=\""+selectedValueofRegion+"\" AND l.uni_key=u.uni_key and w.city=l.city\
+                and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+            elif(min_temp != 'null' and max_temp == 'null'):
+                query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,\
+                    w.humidity from location l,uni_data u, weather w where lower(l."+selectedRegion+")=\""+selectedValueofRegion+"\" AND \
+                    w.min_temp>="+min_temp+" and l.uni_key=u.uni_key \
+                    and w.city=l.city and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+            elif(min_temp == 'null' and max_temp != 'null'):
+                query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity \
+                    from location l,uni_data u, weather w where lower(l."+selectedRegion+")=\""+selectedValueofRegion+"\" AND \
+                        w.max_temp<="+max_temp+" and \
+                        l.uni_key=u.uni_key and w.city=l.city and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+            elif(min_temp != 'null' and max_temp != 'null'):
+                query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity \
+                    from location l,uni_data u, weather w where lower(l."+selectedRegion+")=\""+selectedValueofRegion+"\" AND \
+                        w.min_temp>="+min_temp+" and w.max_temp<="+max_temp+" and l.uni_key=u.uni_key and w.city=l.city \
+                            and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+        elif(min_temp == 'null' and max_temp == 'null'):
+            query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity\
+                 from location l,uni_data u, weather w where l.uni_key=u.uni_key and w.city=l.city\
+                      and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+        elif(min_temp != 'null' and max_temp == 'null'):
+            query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity from location l,uni_data u, weather w where w.min_temp>="+min_temp+" and l.uni_key=u.uni_key and w.city=l.city and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+        elif(min_temp == 'null' and max_temp != 'null'):
+            query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity from location l,uni_data u, weather w where w.max_temp<="+max_temp+" and l.uni_key=u.uni_key and w.city=l.city and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+        elif(min_temp != 'null' and max_temp != 'null'):
+            query = "select u.ranking,u.institution,l.city,l.state,l.country,w.min_temp,w.max_temp,w.wind,w.pressure,w.humidity from location l,uni_data u, weather w where w.min_temp>="+min_temp+" and w.max_temp<="+max_temp+" and l.uni_key=u.uni_key and w.city=l.city and w.state=l.state and w.country=l.country and u.ranking>0 order by u.ranking"
+        print(query)
+        cursor.execute(query)
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:
@@ -45,9 +125,9 @@ def getWeatherData():
     selectedRegion = request.args.get('selectedRegion')
     json_data=[]
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT distinct('+selectedRegion+') FROM weather_info')
+        cursor.execute('SELECT distinct('+selectedRegion+') FROM weather')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:
@@ -144,9 +224,9 @@ def extract_load_uni_Data(filename):
 def getLocationData():
     json_data=[]
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('select uni_key,latitude,longitude,city,state,country from location group by city,state,country having count(*)=1 order by state;')
+        cursor.execute('select uni_key,latitude,longitude,city,state,country from location group by city,state,country order by state;')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:
@@ -200,9 +280,9 @@ def parse_city_weather(weather_json,city,state,country):
 
 def insert_weather_data(weather):
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        query = "insert into weather_info(city,state,country,current_temp,max_temp,min_temp,feels_like_temp,pressure,humidity,wind,sunrise,sunset) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        query = "insert into weather(city,state,country,current_temp,max_temp,min_temp,feels_like_temp,pressure,humidity,wind,sunrise,sunset) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         cursor.execute(query,tuple(weather))
         conn.commit()
         conn.close()
@@ -275,9 +355,9 @@ def parse_topological_data(json_response,city,state,country,uni_key):
     key = p1
     try:
         geocoder = OpenCageGeocode(key)
-        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT institution from uni_combined_data where uni_key='+str(uni_key))
+        cursor.execute('SELECT institution from uni_data where uni_key='+str(uni_key))
         rv = cursor.fetchall()
         conn.close()
         currency = ""
@@ -309,9 +389,9 @@ def parse_topological_data(json_response,city,state,country,uni_key):
 
 def insert_topological_data(topology):
     try:
-        conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        query = "insert into topological_info(city,state,country,aqi,co,nh3,so2,no2,currency,drive_on,speed_in,timezone) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        query = "insert into topology(city,state,country,aqi,co,nh3,so2,no2,currency,drive_on,speed_in,timezone) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         cursor.execute(query,tuple(topology))
         conn.commit()
         conn.close()

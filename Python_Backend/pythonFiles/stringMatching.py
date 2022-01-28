@@ -12,7 +12,7 @@ nltk.download('stopwords')
 databaseTask2 = 'info_integration_task2' 
 username = 'root' 
 password = 'mysql'
-
+databaseTask4 = 'II_T4'
 # datasource1 = list(pd.read_csv("universities_ranking.csv",nrows=1).columns)
 # print(datasource1)
 
@@ -41,16 +41,16 @@ def match_schema():
 def duplicate_uni():
     try:
         conn = mysql.connector.connect(host='localhost',database=databaseTask2,user=username,password=password)
+        conn2 = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute("select group_concat(l.uni_key SEPARATOR'::'),group_concat(u.institution SEPARATOR'::'),count(*) c from location_task3 l,uni_data u where l.uni_key = u.uni_key group by l.geohash having c > 1 limit 20")
+        cursor2 = conn2.cursor()
+        cursor.execute("select group_concat(l.uni_key SEPARATOR'::'),group_concat(u.institution SEPARATOR'::'),count(*) c from location_task3 l,uni_data u where l.uni_key = u.uni_key group by l.geohash having c = 2")
         rv = cursor.fetchall()
         for sqlresult in rv:
             uni_names = sqlresult[1].split('::')
             uni_keys = sqlresult[0].split('::')
             print(uni_names)
-            unique_keys = checkSimilarity(uni_names,uni_keys)
-            # if(unique_keys):
-            #     cursor.execute("select uni_key,institution from uni_data where uni_key in ('+"+str(unique_keys.pop())+"','"+str(unique_keys.pop())+"')")
+            checkSimilarity(uni_names,uni_keys)
             #     duplicate_insert = cursor.fetchall()
                 # for di in duplicate_insert :
                 # cursor.execute("insert into duplicate_uni values("+str(duplicate_insert[0][0])+",\""+str(duplicate_insert[0][1])+"\","+str(duplicate_insert[1][0])+",\""+str(duplicate_insert[1][1])+"\")")
@@ -64,6 +64,7 @@ def duplicate_uni():
         print("SQL Error: "+str(e))
         return None
     conn.close()
+    conn2.close()
 
 def checkSimilarity(uni_names,uni_keys):
     index_i = 0
@@ -92,15 +93,21 @@ def checkSimilarity(uni_names,uni_keys):
             union = len(set(str1)) + len(set(str2)) - intersection
 
             jaccardIndex = float(intersection) / union
-
-            if(distance > 0.85 and ngramDis > 0.75):
+            print("JACCARD:" + str(jaccardIndex))
+            if(distance > 0.85 and ngramDis > 0.70):
                 print("**************** ITS A MATCH ***************")
-                unique_keys.add(uni_keys[index_j])
-                unique_keys.add(uni_keys[index_i])
-                uni_keys.pop(index_j)
-                uni_names.pop(index_j)
-                remove_duplicates(unique_keys)
-                # return unique_keys
+                # unique_keys.add(uni_keys[index_j])
+                # unique_keys.add(uni_keys[index_i])
+                # uni_keys.pop(index_j)
+                # uni_names.pop(index_j)
+                # remove_duplicates(unique_keys)
+                insert_uni_data(uni_keys,True)
+            elif(jaccardIndex > 0.85):
+                print("**************** ITS A MATCH ***************")
+                insert_uni_data(uni_keys,True)
+                # remove_duplicates(unique_keys)
+            else:
+                insert_uni_data(uni_keys,False)
             index_j = index_j + 1
         index_i = index_i + 1
 
@@ -111,6 +118,25 @@ def remove_duplicates(keys):
         cursor.execute("select uni_key,institution from uni_data where uni_key in ('+"+str(keys.pop())+"','"+str(keys.pop())+"')")
         duplicate_insert = cursor.fetchall()
         cursor.execute("insert into duplicate_uni values("+str(duplicate_insert[0][0])+",\""+str(duplicate_insert[0][1])+"\","+str(duplicate_insert[1][0])+",\""+str(duplicate_insert[1][1])+"\")")
+        conn.commit()
+    except Error as e:
+        print("SQL Error: "+str(e))
+        return None
+    conn.close()
+
+def insert_uni_data(keys,duplicate):
+    try:
+        conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
+        cursor = conn.cursor()
+        if(duplicate == False):
+            query = "insert into uni_data select * from info_integration_task2.uni_data where uni_key in('"+keys.pop()+"','"+keys.pop()+"')"
+        else:
+            query = "insert into uni_data select uni_key,cast(AVG(ranking) as SIGNED) \
+                as ranking,institution,country,MAX(size) as size,MAX(status) as status,MAX(num_stu) \
+                as num_stu,MAX(stu_staff_rt) as stu_staff_rt,MAX(intl_stu_per) as intl_stu_per,MAX(gender_rt) \
+                as gender_rt,AVG(overall_score) as overall_score from info_integration_task2.uni_data where uni_key in ('" \
+                +keys.pop()+"','"+keys.pop()+"')"
+        cursor.execute(query)
         conn.commit()
     except Error as e:
         print("SQL Error: "+str(e))

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HomeService } from '../home.service';
+import {GridOptions} from "ag-grid";
 
 @Component({
   selector: 'app-university-data',
@@ -7,13 +8,11 @@ import { HomeService } from '../home.service';
   styleUrls: ['./university-data.component.css']
 })
 export class UniversityDataComponent implements OnInit {
-
   constructor(private homeService: HomeService) { }
 
   unis = [];
   ngOnInit(): void {
     this.homeService.getUniversityData().subscribe(response => {
-      console.log(response)
       this.unis = response;
     });
   }

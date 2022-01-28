@@ -18,20 +18,10 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
 
-    // this.homeService.getPyMsg().subscribe(resp => {
-    //   this.pyMsg = resp;
-    // })
-
     this.menu = [
-      // { label: 'Student Data', icon: 'pi pi-fw pi-pencil', command: (event?: any) => this.data(event) },
       { label: 'Query Tab', icon: 'pi pi-fw pi-cloud', command: (event?: any) => this.data(event) },
       { label: 'University Data', icon: 'pi pi-fw pi-home', command: (event?: any) => this.data(event) }
     ];
-
-    // this.homeService.sendMessage(100).subscribe(response => {
-    //   console.log(response);
-    //   this.id = response;
-    // });
 
   }
 

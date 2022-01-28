@@ -12,7 +12,7 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "^9.1.13",
-    "@angular/cdk": "^11.0.0",
+    "@angular/cdk": "^11.2.13",
     "@angular/common": "~9.1.0",
     "@angular/compiler": "~9.1.0",
     "@angular/core": "~9.1.0",
@@ -20,6 +20,9 @@
     "@angular/platform-browser": "~9.1.0",
     "@angular/platform-browser-dynamic": "~9.1.0",
     "@angular/router": "~9.1.0",
+    "ag-grid": "^18.1.2",
+    "ag-grid-angular": "^26.2.0",
+    "ag-grid-community": "^26.2.1",
     "font-awesome": "^4.7.0",
     "primeflex": "^3.1.2",
     "primeicons": "^4.1.0",

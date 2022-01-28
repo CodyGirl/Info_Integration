@@ -42,8 +42,18 @@ export class HomeService {
   }
 
   public getRegionData(selectedRegion): Observable<any> {
-
     const resp = this.http.get(this.url + 'region?selectedRegion='+selectedRegion);
+    return resp;
+  }
+  
+  public getPollutionData(selectedRegion,selectedValue): Observable<any> {
+    const resp = this.http.get(this.url + 'getPollutionData?selectedRegion='+selectedRegion+'&selectedVal='+selectedValue[selectedRegion]);
+    return resp;
+  }
+
+  public getWeatherData(selectedRegion,selectedValue,min_temp,max_temp): Observable<any> {
+    const resp = this.http.get(this.url + 'getWeatherData?selectedRegion='+selectedRegion+'&selectedVal='+selectedValue[selectedRegion]+
+    '&min_temp='+min_temp+'&max_temp='+max_temp);
     return resp;
   }
 
