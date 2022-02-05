@@ -29,7 +29,7 @@ def getUniData():
     try:
         conn = mysql.connector.connect(host='localhost',database=databaseTask4,user=username,password=password)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM uni_data where ranking <> 0')
+        cursor.execute('SELECT * FROM uni_data where ranking <> 0 order by ranking')
         row_headers=[x[0] for x in cursor.description] #this will extract row headers
         rv = cursor.fetchall()
         for result in rv:
